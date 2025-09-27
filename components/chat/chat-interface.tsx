@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { MessageCircle, Send, Clock, CheckCheck, Phone, Video, MoreVertical } from "lucide-react"
+import { MessageCircle, Send, Clock, CheckCheck, Phone, Video, MoreVertical, Plus, Search, X } from "lucide-react"
 
 interface ChatMessage {
   id: string
@@ -57,6 +57,10 @@ export function ChatInterface() {
   const [newMessage, setNewMessage] = useState("")
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showNewConversation, setShowNewConversation] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
@@ -170,6 +174,34 @@ export function ChatInterface() {
     }
   }
 
+  const searchUsers = async (query: string) => {
+    if (!query.trim() || !currentUser) return
+
+    setIsSearching(true)
+    try {
+      const { data } = await supabase
+        .from("users")
+        .select("id, full_name, user_type, profile_image_url")
+        .neq("id", currentUser.id)
+        .ilike("full_name", `%${query}%`)
+        .limit(10)
+
+      setSearchResults(data || [])
+    } catch (error) {
+      console.error("Error searching users:", error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const startConversation = async (userId: string) => {
+    setActiveConversation(userId)
+    setShowNewConversation(false)
+    setSearchQuery("")
+    setSearchResults([])
+    await fetchMessages(userId)
+  }
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeConversation || !currentUser) return
 
@@ -261,10 +293,20 @@ export function ChatInterface() {
       {/* Conversations List */}
       <Card className="lg:col-span-1">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <MessageCircle className="h-5 w-5 mr-2" />
-            Messages
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center">
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Messages
+            </CardTitle>
+            <Button
+              onClick={() => setShowNewConversation(true)}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <ScrollArea className="h-[500px]">
@@ -447,6 +489,83 @@ export function ChatInterface() {
           </>
         )}
       </Card>
+
+      {/* New Conversation Modal */}
+      {showNewConversation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Start New Conversation</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowNewConversation(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search users by name..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    searchUsers(e.target.value)
+                  }}
+                  className="pl-10"
+                />
+              </div>
+
+              <div className="max-h-60 overflow-y-auto">
+                {isSearching ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mx-auto"></div>
+                    <p className="text-sm text-gray-500 mt-2">Searching...</p>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="space-y-2">
+                    {searchResults.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                        onClick={() => startConversation(user.id)}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.profile_image_url || "/placeholder.svg"} />
+                            <AvatarFallback>
+                              {user.full_name.split(" ").map((n: string) => n[0]).join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{user.full_name}</p>
+                            <p className="text-xs text-gray-500 capitalize">{user.user_type}</p>
+                          </div>
+                        </div>
+                        <Button size="sm" variant="outline">
+                          Message
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : searchQuery ? (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-500">No users found</p>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-500">Start typing to search for users</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

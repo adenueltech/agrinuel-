@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { MapPin, Calendar, Star, ShoppingCart, MessageCircle, Leaf } from "lucide-react"
 import { OrderModal } from "./order-modal"
 import { ChatModal } from "./chat-modal"
+import { ProductDetailsModal } from "./product-details-modal"
+import { EditProductModal } from "./edit-product-modal"
 
 interface Product {
   id: string
@@ -38,11 +40,20 @@ interface User {
 interface ProductCardProps {
   product: Product
   currentUser: User | null
+  categories?: Category[]
+  onProductUpdated?: () => void
 }
 
-export function ProductCard({ product, currentUser }: ProductCardProps) {
+interface Category {
+  id: string
+  name: string
+}
+
+export function ProductCard({ product, currentUser, categories = [], onProductUpdated }: ProductCardProps) {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
   const [isChatModalOpen, setIsChatModalOpen] = useState(false)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-NG", {
@@ -129,16 +140,24 @@ export function ProductCard({ product, currentUser }: ProductCardProps) {
           <div className="flex gap-2 w-full">
             {currentUser?.user_type === "buyer" && (
               <>
-                <Button onClick={() => setIsOrderModalOpen(true)} className="flex-1 bg-green-600 hover:bg-green-700">
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Order
+                <Button onClick={() => setIsDetailsModalOpen(true)} className="flex-1 bg-green-600 hover:bg-green-700">
+                  View Details
                 </Button>
                 <Button variant="outline" size="icon" onClick={() => setIsChatModalOpen(true)}>
                   <MessageCircle className="h-4 w-4" />
                 </Button>
               </>
             )}
-            {currentUser?.user_type === "farmer" && (
+            {currentUser?.user_type === "farmer" && product.farmer_id === currentUser.id && (
+              <Button
+                onClick={() => setIsEditModalOpen(true)}
+                variant="outline"
+                className="flex-1 bg-transparent"
+              >
+                Edit Details
+              </Button>
+            )}
+            {currentUser?.user_type === "farmer" && product.farmer_id !== currentUser.id && (
               <Button variant="outline" className="flex-1 bg-transparent">
                 View Details
               </Button>
@@ -147,6 +166,26 @@ export function ProductCard({ product, currentUser }: ProductCardProps) {
         </CardFooter>
       </Card>
 
+      <ProductDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        product={product}
+        onOrder={() => {
+          setIsDetailsModalOpen(false)
+          setIsOrderModalOpen(true)
+        }}
+        onChat={() => {
+          setIsDetailsModalOpen(false)
+          setIsChatModalOpen(true)
+        }}
+      />
+      <EditProductModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        product={product}
+        categories={categories}
+        onProductUpdated={onProductUpdated || (() => {})}
+      />
       <OrderModal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} product={product} />
       <ChatModal
         isOpen={isChatModalOpen}

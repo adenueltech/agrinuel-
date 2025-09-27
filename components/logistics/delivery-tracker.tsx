@@ -206,9 +206,9 @@ export function DeliveryTracker() {
                           <Package className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg">{delivery.order.product.name}</CardTitle>
+                          <CardTitle className="text-lg">{delivery.order?.product?.name || "Product"}</CardTitle>
                           <CardDescription>
-                            Order #{delivery.order_id.slice(-8)} • {formatPrice(delivery.order.total_amount)}
+                            Order #{delivery.order_id?.slice(-8) || "N/A"} • {formatPrice(delivery.order?.total_amount || 0)}
                           </CardDescription>
                         </div>
                       </div>
@@ -296,11 +296,11 @@ export function DeliveryTracker() {
                     <div className="flex items-center justify-between text-sm">
                       <div>
                         <span className="text-gray-500">Customer: </span>
-                        <span className="font-medium">{delivery.order.buyer.full_name}</span>
+                        <span className="font-medium">{delivery.order?.buyer?.full_name || "Unknown"}</span>
                       </div>
                       <div>
                         <span className="text-gray-500">From: </span>
-                        <span className="font-medium">{delivery.order.product.farmer.full_name}</span>
+                        <span className="font-medium">{delivery.order?.product?.farmer?.full_name || "Unknown"}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -330,7 +330,7 @@ export function DeliveryTracker() {
                           <CheckCircle className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
-                          <p className="font-medium">{delivery.order.product.name}</p>
+                          <p className="font-medium">{delivery.order?.product?.name || "Product"}</p>
                           <p className="text-sm text-gray-500">
                             Delivered by {delivery.driver_name} • {formatTime(delivery.delivery_time)}
                           </p>

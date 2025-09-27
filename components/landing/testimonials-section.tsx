@@ -81,11 +81,11 @@ export function TestimonialsSection() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory">
           {testimonials.map((testimonial, index) => (
             <Card
               key={index}
-              className="hover-lift border-border/50 hover:border-primary/30 transition-all duration-300 animate-fade-in-up"
+              className="hover-lift border-border/50 hover:border-primary/30 transition-all duration-300 animate-fade-in-up flex-shrink-0 w-80 snap-center"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <CardContent className="p-6">

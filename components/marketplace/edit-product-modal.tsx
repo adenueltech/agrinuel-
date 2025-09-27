@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -9,42 +9,98 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Upload } from "lucide-react"
+import { Loader2, Upload, X } from "lucide-react"
 
 interface Category {
   id: string
   name: string
 }
 
-interface AddProductModalProps {
-  isOpen: boolean
-  onClose: () => void
-  categories: Category[]
-  onProductAdded: () => void
+interface Product {
+  id: string
+  name: string
+  description: string
+  price_per_unit: number
+  unit: string
+  quantity_available: number
+  harvest_date: string
+  quality_grade: string
+  organic: boolean
+  location: {
+    city: string
+    state: string
+  }
+  category_id: string
+  images: string[]
 }
 
-export function AddProductModal({ isOpen, onClose, categories, onProductAdded }: AddProductModalProps) {
+interface EditProductModalProps {
+  isOpen: boolean
+  onClose: () => void
+  product: Product
+  categories: Category[]
+  onProductUpdated: () => void
+}
+
+export function EditProductModal({ isOpen, onClose, product, categories, onProductUpdated }: EditProductModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedImages, setSelectedImages] = useState<File[]>([])
-  const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [existingImages, setExistingImages] = useState<string[]>(product.images || [])
+  const [formData, setFormData] = useState({
+    name: product.name,
+    description: product.description,
+    price_per_unit: product.price_per_unit.toString(),
+    unit: product.unit,
+    quantity_available: product.quantity_available.toString(),
+    harvest_date: product.harvest_date,
+    quality_grade: product.quality_grade,
+    organic: product.organic,
+    city: product.location?.city || "",
+    state: product.location?.state || "",
+    category_id: product.category_id,
+  })
   const supabase = createClient()
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        name: product.name,
+        description: product.description,
+        price_per_unit: product.price_per_unit.toString(),
+        unit: product.unit,
+        quantity_available: product.quantity_available.toString(),
+        harvest_date: product.harvest_date,
+        quality_grade: product.quality_grade,
+        organic: product.organic,
+        city: product.location?.city || "",
+        state: product.location?.state || "",
+        category_id: product.category_id,
+      })
+      setExistingImages(product.images || [])
+      setSelectedImages([])
+    }
+  }, [isOpen, product])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
-    if (files.length + selectedImages.length > 5) {
+    if (files.length + selectedImages.length + existingImages.length > 5) {
       setError("Maximum 5 images allowed")
       return
     }
     setSelectedImages(prev => [...prev, ...files])
   }
 
-  const removeImage = (index: number) => {
+  const removeExistingImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const removeNewImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index))
   }
 
   const uploadImages = async (): Promise<string[]> => {
-    const uploadedUrls: string[] = []
+    const uploadedUrls: string[] = [...existingImages]
 
     for (const file of selectedImages) {
       const fileExt = file.name.split('.').pop()
@@ -67,46 +123,41 @@ export function AddProductModal({ isOpen, onClose, categories, onProductAdded }:
     return uploadedUrls
   }
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsLoading(true)
     setError(null)
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error("Not authenticated")
+      // Upload new images
+      const allImageUrls = await uploadImages()
 
-      // Upload images first
-      const uploadedImageUrls = await uploadImages()
-
-      const productData = {
-        farmer_id: user.id,
-        category_id: formData.get("category_id") as string,
-        name: formData.get("name") as string,
-        description: formData.get("description") as string,
-        price_per_unit: Number.parseFloat(formData.get("price_per_unit") as string),
-        unit: formData.get("unit") as string,
-        quantity_available: Number.parseInt(formData.get("quantity_available") as string),
-        harvest_date: formData.get("harvest_date") as string,
-        quality_grade: formData.get("quality_grade") as string,
-        organic: formData.get("organic") === "on",
+      const updateData = {
+        name: formData.name,
+        description: formData.description,
+        price_per_unit: Number.parseFloat(formData.price_per_unit),
+        unit: formData.unit,
+        quantity_available: Number.parseInt(formData.quantity_available),
+        harvest_date: formData.harvest_date,
+        quality_grade: formData.quality_grade,
+        organic: formData.organic,
         location: {
-          city: formData.get("city") as string,
-          state: formData.get("state") as string,
+          city: formData.city,
+          state: formData.state,
         },
-        images: uploadedImageUrls,
+        category_id: formData.category_id,
+        images: allImageUrls,
       }
 
-      const { error } = await supabase.from("products").insert(productData)
+      const { error } = await supabase
+        .from("products")
+        .update(updateData)
+        .eq("id", product.id)
 
       if (error) throw error
 
-      onProductAdded()
+      onProductUpdated()
       onClose()
-      // Reset form
-      setSelectedImages([])
-      setImageUrls([])
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -118,18 +169,27 @@ export function AddProductModal({ isOpen, onClose, categories, onProductAdded }:
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
+          <DialogTitle>Edit Product</DialogTitle>
         </DialogHeader>
 
-        <form action={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Product Name</Label>
-              <Input id="name" name="name" placeholder="e.g., Fresh Tomatoes" required />
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Fresh Tomatoes"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category_id">Category</Label>
-              <Select name="category_id" required>
+              <Select
+                value={formData.category_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -146,17 +206,35 @@ export function AddProductModal({ isOpen, onClose, categories, onProductAdded }:
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" placeholder="Describe your product..." rows={3} required />
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Describe your product..."
+              rows={3}
+              required
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price_per_unit">Price per Unit (₦)</Label>
-              <Input id="price_per_unit" name="price_per_unit" type="number" step="0.01" placeholder="0.00" required />
+              <Input
+                id="price_per_unit"
+                type="number"
+                step="0.01"
+                value={formData.price_per_unit}
+                onChange={(e) => setFormData(prev => ({ ...prev, price_per_unit: e.target.value }))}
+                placeholder="0.00"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="unit">Unit</Label>
-              <Select name="unit" required>
+              <Select
+                value={formData.unit}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
@@ -171,18 +249,34 @@ export function AddProductModal({ isOpen, onClose, categories, onProductAdded }:
             </div>
             <div className="space-y-2">
               <Label htmlFor="quantity_available">Quantity Available</Label>
-              <Input id="quantity_available" name="quantity_available" type="number" placeholder="0" required />
+              <Input
+                id="quantity_available"
+                type="number"
+                value={formData.quantity_available}
+                onChange={(e) => setFormData(prev => ({ ...prev, quantity_available: e.target.value }))}
+                placeholder="0"
+                required
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="harvest_date">Harvest Date</Label>
-              <Input id="harvest_date" name="harvest_date" type="date" required />
+              <Input
+                id="harvest_date"
+                type="date"
+                value={formData.harvest_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, harvest_date: e.target.value }))}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="quality_grade">Quality Grade</Label>
-              <Select name="quality_grade">
+              <Select
+                value={formData.quality_grade}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, quality_grade: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select grade" />
                 </SelectTrigger>
@@ -198,16 +292,32 @@ export function AddProductModal({ isOpen, onClose, categories, onProductAdded }:
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city">City</Label>
-              <Input id="city" name="city" placeholder="e.g., Lagos" required />
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                placeholder="e.g., Lagos"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="state">State</Label>
-              <Input id="state" name="state" placeholder="e.g., Lagos State" required />
+              <Input
+                id="state"
+                value={formData.state}
+                onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
+                placeholder="e.g., Lagos State"
+                required
+              />
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            <Switch id="organic" name="organic" />
+            <Switch
+              id="organic"
+              checked={formData.organic}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, organic: checked }))}
+            />
             <Label htmlFor="organic">Organic Product</Label>
           </div>
 
@@ -225,23 +335,46 @@ export function AddProductModal({ isOpen, onClose, categories, onProductAdded }:
               <label htmlFor="image-upload" className="cursor-pointer">
                 <div className="text-center py-4">
                   <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Click to upload images</p>
+                  <p className="text-sm text-gray-600">Click to add more images</p>
                   <p className="text-xs text-gray-500">PNG, JPG up to 5MB each</p>
                 </div>
               </label>
 
-              {selectedImages.length > 0 && (
+              {/* Existing Images */}
+              {existingImages.length > 0 && (
                 <div className="grid grid-cols-3 gap-2 mt-4">
-                  {selectedImages.map((file, index) => (
-                    <div key={index} className="relative">
+                  {existingImages.map((url, index) => (
+                    <div key={`existing-${index}`} className="relative">
                       <img
-                        src={URL.createObjectURL(file)}
-                        alt={`Preview ${index + 1}`}
+                        src={url}
+                        alt={`Existing ${index + 1}`}
                         className="w-full h-20 object-cover rounded"
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage(index)}
+                        onClick={() => removeExistingImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* New Images */}
+              {selectedImages.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  {selectedImages.map((file, index) => (
+                    <div key={`new-${index}`} className="relative">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`New ${index + 1}`}
+                        className="w-full h-20 object-cover rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeNewImage(index)}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
                       >
                         ×
@@ -265,10 +398,10 @@ export function AddProductModal({ isOpen, onClose, categories, onProductAdded }:
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding Product...
+                  Updating Product...
                 </>
               ) : (
-                "Add Product"
+                "Update Product"
               )}
             </Button>
           </div>

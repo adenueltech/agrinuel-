@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { MapPin, Route, Clock, Fuel, Truck, Navigation, Zap } from "lucide-react"
+import { RouteMap } from "./route-map"
 
 interface RouteStop {
   id: string
@@ -219,67 +220,53 @@ export function RouteOptimizer() {
                 <p className="text-gray-500">Add at least 2 stops and click "Optimize Route" to see results</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Route Stats */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="flex items-center text-blue-600 mb-1">
-                      <Route className="h-4 w-4 mr-1" />
-                      <span className="text-sm font-medium">Distance</span>
-                    </div>
-                    <p className="text-lg font-bold text-blue-800">{optimizedRoute.totalDistance} km</p>
-                  </div>
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <div className="flex items-center text-green-600 mb-1">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span className="text-sm font-medium">Duration</span>
-                    </div>
-                    <p className="text-lg font-bold text-green-800">{optimizedRoute.totalDuration} min</p>
-                  </div>
-                  <div className="bg-orange-50 p-3 rounded-lg">
-                    <div className="flex items-center text-orange-600 mb-1">
-                      <Fuel className="h-4 w-4 mr-1" />
-                      <span className="text-sm font-medium">Fuel</span>
-                    </div>
-                    <p className="text-lg font-bold text-orange-800">{optimizedRoute.estimatedFuel}L</p>
-                  </div>
-                  <div className="bg-purple-50 p-3 rounded-lg">
-                    <div className="flex items-center text-purple-600 mb-1">
-                      <Truck className="h-4 w-4 mr-1" />
-                      <span className="text-sm font-medium">Cost</span>
-                    </div>
-                    <p className="text-lg font-bold text-purple-800">{formatPrice(optimizedRoute.estimatedCost)}</p>
-                  </div>
-                </div>
+              <div className="space-y-6">
+                {/* Route Map */}
+                <RouteMap stops={optimizedRoute.stops} />
 
-                <Separator />
-
-                {/* Optimized Stop Order */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900">Optimized Stop Order</h4>
-                  {optimizedRoute.stops.map((stop, index) => (
-                    <div key={stop.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <Badge variant={stop.type === "pickup" ? "default" : "secondary"}>
-                            {stop.type === "pickup" ? "Pickup" : "Delivery"}
-                          </Badge>
-                          <Badge className={getPriorityColor(stop.priority)}>{stop.priority}</Badge>
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Left Column - Route Stats */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <div className="flex items-center text-blue-600 mb-1">
+                          <Route className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Distance</span>
                         </div>
-                        <p className="text-sm font-medium text-gray-900">{stop.address || "Address not specified"}</p>
-                        <p className="text-xs text-gray-500">{stop.city || "City not specified"}</p>
+                        <p className="text-lg font-bold text-blue-800">{optimizedRoute.totalDistance} km</p>
+                      </div>
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <div className="flex items-center text-green-600 mb-1">
+                          <Clock className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Duration</span>
+                        </div>
+                        <p className="text-lg font-bold text-green-800">{optimizedRoute.totalDuration} min</p>
+                      </div>
+                      <div className="bg-orange-50 p-3 rounded-lg">
+                        <div className="flex items-center text-orange-600 mb-1">
+                          <Fuel className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Fuel</span>
+                        </div>
+                        <p className="text-lg font-bold text-orange-800">{optimizedRoute.estimatedFuel}L</p>
+                      </div>
+                      <div className="bg-purple-50 p-3 rounded-lg">
+                        <div className="flex items-center text-purple-600 mb-1">
+                          <Truck className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Cost</span>
+                        </div>
+                        <p className="text-lg font-bold text-purple-800">{formatPrice(optimizedRoute.estimatedCost)}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
 
-                <Button className="w-full bg-green-600 hover:bg-green-700">
-                  <Navigation className="h-4 w-4 mr-2" />
-                  Start Navigation
-                </Button>
+                  {/* Right Column - Start Navigation */}
+                  <div className="space-y-4">
+                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                      <Navigation className="h-4 w-4 mr-2" />
+                      Start Navigation
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

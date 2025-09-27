@@ -14,6 +14,8 @@ import { useRouter } from "next/navigation"
 export function AuthForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showResend, setShowResend] = useState(false)
+  const [resendEmail, setResendEmail] = useState("")
   const router = useRouter()
   const supabase = createClient()
 
@@ -32,7 +34,7 @@ export function AuthForm() {
         email,
         password,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}/verify`,
           data: {
             full_name: fullName,
             phone,
@@ -45,7 +47,7 @@ export function AuthForm() {
 
       if (data.user) {
         // Insert additional user data
-        const { error: insertError } = await supabase.from("users").insert({
+        const { error: insertError } = await supabase.from("users").upsert({
           id: data.user.id,
           email,
           full_name: fullName,
@@ -55,7 +57,9 @@ export function AuthForm() {
 
         if (insertError) throw insertError
 
-        router.push("/dashboard")
+        // Show success message instead of redirecting immediately
+        setError("Account created successfully! Please check your email and click the verification link to complete your registration.")
+        return
       }
     } catch (error: any) {
       setError(error.message)
@@ -67,6 +71,7 @@ export function AuthForm() {
   const handleSignIn = async (formData: FormData) => {
     setIsLoading(true)
     setError(null)
+    setShowResend(false)
 
     const email = formData.get("email") as string
     const password = formData.get("password") as string
@@ -77,9 +82,39 @@ export function AuthForm() {
         password,
       })
 
+      if (error) {
+        if (error.message.includes("Email not confirmed")) {
+          setShowResend(true)
+          setResendEmail(email)
+          setError("Please check your email and confirm your account, or request a new confirmation email.")
+        } else if (error.message.includes("Invalid login credentials")) {
+          setError("You don't have an account with this email. Kindly sign up first.")
+        } else {
+          throw error
+        }
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (error: any) {
+      setError(error.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleResendConfirmation = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: resendEmail,
+      })
+
       if (error) throw error
 
-      router.push("/dashboard")
+      setError("Confirmation email sent! Please check your inbox.")
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -89,6 +124,11 @@ export function AuthForm() {
 
   return (
     <div className="min-h-screen bg-gradient-agriculture flex items-center justify-center p-4">
+      <div className="absolute top-4 left-4">
+        <Button asChild variant="ghost" className="text-white hover:bg-white/10 cursor-pointer">
+          <a href="/">← Back to Home</a>
+        </Button>
+      </div>
       <div className="w-full max-w-md animate-fade-in-up">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
@@ -150,13 +190,31 @@ export function AuthForm() {
                     />
                   </div>
                   {error && (
-                    <div className="bg-red-500/20 border border-red-500/30 text-red-100 px-4 py-2 rounded-md text-sm">
+                    <div className={`px-4 py-2 rounded-md text-sm ${
+                      error.includes("successfully") || error.includes("sent!")
+                        ? "bg-green-500/20 border border-green-500/30 text-green-100"
+                        : "bg-red-500/20 border border-red-500/30 text-red-100"
+                    }`}>
                       {error}
+                      {showResend && (
+                        <div className="mt-3">
+                          <Button
+                            type="button"
+                            onClick={handleResendConfirmation}
+                            variant="outline"
+                            size="sm"
+                            className="bg-transparent border-white/30 text-white hover:bg-white/10 cursor-pointer"
+                            disabled={isLoading}
+                          >
+                            Resend Confirmation Email
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                   <Button
                     type="submit"
-                    className="w-full bg-white text-green-600 hover:bg-white/90 transition-all duration-300"
+                    className="w-full bg-white text-green-600 hover:bg-white/90 transition-all duration-300 cursor-pointer"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -254,7 +312,7 @@ export function AuthForm() {
                   )}
                   <Button
                     type="submit"
-                    className="w-full bg-white text-green-600 hover:bg-white/90 transition-all duration-300"
+                    className="w-full bg-white text-green-600 hover:bg-white/90 transition-all duration-300 cursor-pointer"
                     disabled={isLoading}
                   >
                     {isLoading ? (

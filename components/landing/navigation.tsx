@@ -22,29 +22,29 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="#features" className="text-white/80 hover:text-white transition-colors">
+            <Link href="/#features" className="text-white/80 hover:text-primary transition-colors">
               Features
             </Link>
-            <Link href="#how-it-works" className="text-white/80 hover:text-white transition-colors">
+            <Link href="/#how-it-works" className="text-white/80 hover:text-primary transition-colors">
               How it Works
             </Link>
-            <Link href="#testimonials" className="text-white/80 hover:text-white transition-colors">
+            <Link href="/#testimonials" className="text-white/80 hover:text-primary transition-colors">
               Testimonials
             </Link>
-            <Link href="#pricing" className="text-white/80 hover:text-white transition-colors">
+            <Link href="/#pricing" className="text-white/80 hover:text-primary transition-colors">
               Pricing
             </Link>
-            <Link href="#contact" className="text-white/80 hover:text-white transition-colors">
+            <Link href="/contact" className="text-white/80 hover:text-primary transition-colors">
               Contact
             </Link>
           </div>
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10">
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 cursor-pointer">
               <Link href="/login">Sign In</Link>
             </Button>
-            <Button asChild className="bg-primary hover:bg-primary/90">
+            <Button asChild className="bg-primary hover:bg-primary/90 cursor-pointer">
               <Link href="/signup">Get Started</Link>
             </Button>
           </div>
@@ -59,26 +59,26 @@ export function Navigation() {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-white/10">
             <div className="flex flex-col space-y-4">
-              <Link href="#features" className="text-white/80 hover:text-white transition-colors">
+              <Link href="/#features" className="text-white/80 hover:text-primary transition-colors">
                 Features
               </Link>
-              <Link href="#how-it-works" className="text-white/80 hover:text-white transition-colors">
+              <Link href="/#how-it-works" className="text-white/80 hover:text-primary transition-colors">
                 How it Works
               </Link>
-              <Link href="#testimonials" className="text-white/80 hover:text-white transition-colors">
+              <Link href="/#testimonials" className="text-white/80 hover:text-primary transition-colors">
                 Testimonials
               </Link>
-              <Link href="#pricing" className="text-white/80 hover:text-white transition-colors">
+              <Link href="/#pricing" className="text-white/80 hover:text-primary transition-colors">
                 Pricing
               </Link>
-              <Link href="#contact" className="text-white/80 hover:text-white transition-colors">
+              <Link href="/contact" className="text-white/80 hover:text-primary transition-colors">
                 Contact
               </Link>
               <div className="flex flex-col space-y-2 pt-4">
-                <Button asChild variant="ghost" className="text-white hover:bg-white/10">
+                <Button asChild variant="ghost" className="text-white hover:bg-white/10 cursor-pointer">
                   <Link href="/login">Sign In</Link>
                 </Button>
-                <Button asChild className="bg-primary hover:bg-primary/90">
+                <Button asChild className="bg-primary hover:bg-primary/90 cursor-pointer">
                   <Link href="/signup">Get Started</Link>
                 </Button>
               </div>
