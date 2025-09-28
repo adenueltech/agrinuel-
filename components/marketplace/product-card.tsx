@@ -23,6 +23,7 @@ interface Product {
   organic: boolean
   harvest_date: string
   farmer_id: string
+  category_id: string
   farmer: {
     full_name: string
     profile_image_url?: string
@@ -158,9 +159,14 @@ export function ProductCard({ product, currentUser, categories = [], onProductUp
               </Button>
             )}
             {currentUser?.user_type === "farmer" && product.farmer_id !== currentUser.id && (
-              <Button variant="outline" className="flex-1 bg-transparent">
-                View Details
-              </Button>
+              <>
+                <Button onClick={() => setIsDetailsModalOpen(true)} className="flex-1 bg-green-600 hover:bg-green-700">
+                  View Details
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setIsChatModalOpen(true)}>
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              </>
             )}
           </div>
         </CardFooter>
@@ -170,6 +176,7 @@ export function ProductCard({ product, currentUser, categories = [], onProductUp
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         product={product}
+        currentUser={currentUser}
         onOrder={() => {
           setIsDetailsModalOpen(false)
           setIsOrderModalOpen(true)

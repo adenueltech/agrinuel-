@@ -32,11 +32,12 @@ interface ProductDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   product: Product
+  currentUser: { id: string; user_type: "farmer" | "buyer" } | null
   onOrder: () => void
   onChat: () => void
 }
 
-export function ProductDetailsModal({ isOpen, onClose, product, onOrder, onChat }: ProductDetailsModalProps) {
+export function ProductDetailsModal({ isOpen, onClose, product, currentUser, onOrder, onChat }: ProductDetailsModalProps) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
@@ -150,11 +151,13 @@ export function ProductDetailsModal({ isOpen, onClose, product, onOrder, onChat 
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <Button onClick={onOrder} className="flex-1 bg-green-600 hover:bg-green-700">
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Place Order
-            </Button>
-            <Button variant="outline" onClick={onChat} className="flex-1">
+            {currentUser?.user_type === "buyer" && (
+              <Button onClick={onOrder} className="flex-1 bg-green-600 hover:bg-green-700">
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Place Order
+              </Button>
+            )}
+            <Button variant="outline" onClick={onChat} className={currentUser?.user_type === "buyer" ? "flex-1" : "w-full"}>
               <MessageCircle className="h-4 w-4 mr-2" />
               Contact Farmer
             </Button>
