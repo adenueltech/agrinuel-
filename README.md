@@ -73,6 +73,7 @@ AgriNuel revolutionizes Nigeria's agricultural value chain by creating a digital
 - **Payment Security**: Secure payment processing with instant settlements
 - **Logistics Support**: Integrated delivery tracking and route optimization
 - **Community Access**: Connect with other farmers and cooperatives
+- **Peer Networking**: View other farmers' products and chat directly
 
 ### 🛒 For Buyers
 - **Direct Sourcing**: Purchase directly from verified farmers
